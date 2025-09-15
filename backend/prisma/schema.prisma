@@ -1,0 +1,103 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+model User {
+  id         String   @id @default(uuid())
+  name       String?
+  email      String   @unique
+  password   String?
+  provider   String?
+  providerId String?
+  overallStreak        Int      @default(0)
+  longestOverallStreak Int      @default(0)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  Habit      Habit[]
+  followers  Follow[] @relation("userFollowers")
+  following  Follow[] @relation("userFollowing")
+
+  Feed Feed[]
+}
+
+model Habit {
+  id              String          @id @default(uuid())
+  name            String
+  description     String?
+  category        String?
+  frequency       HabitFrequency
+  createdAt       DateTime        @default(now())
+  updatedAt       DateTime        @updatedAt 
+  userId          String
+  user            User            @relation(fields: [userId], references: [id])
+  currentStreak   Int      @default(0)   // current active streak
+  longestStreak   Int      @default(0)   // longest streak ever achieved
+  lastCompletedAt DateTime?              // last completion timestamp
+
+  completedHabits CompletedHabit[]
+  Feed Feed[]
+}
+
+model CompletedHabit {
+  id        String   @id @default(uuid())
+  date      DateTime
+  habitId   String
+  habit     Habit    @relation(fields: [habitId], references: [id])
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Follow {
+  id         String   @id @default(uuid())
+  userId     String
+  followerId String
+  status     FollowStatus @default(PENDING)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user       User @relation("userFollowers", fields: [userId], references: [id])
+  follower   User @relation("userFollowing", fields: [followerId], references: [id])
+
+  @@unique([userId, followerId])
+}
+
+model Feed {
+  id        String   @id @default(uuid())
+  userId    String
+  habitId   String
+  type      FeedType
+  message   String?
+  createdAt DateTime @default(now())
+
+  user  User  @relation(fields: [userId], references: [id])
+  habit Habit @relation(fields: [habitId], references: [id])
+}
+enum FeedType {
+  HABIT_CREATED
+  HABIT_COMPLETED
+  STREAK_UPDATED
+}
+
+enum HabitFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+}
+
+enum FollowStatus {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
