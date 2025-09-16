@@ -86,6 +86,11 @@ const habitController = {
                 return res.status(404).json({ error: "Habit not found" });
             }
 
+            // Delete related records first due to foreign key constraints
+            await prisma.completedHabit.deleteMany({ where: { habitId: id } });
+            await prisma.feed.deleteMany({ where: { habitId: id } });
+            
+            // Now delete the habit
             await prisma.habit.delete({ where: { id: id } });
             return res.status(204).send();
         } catch (error) {
