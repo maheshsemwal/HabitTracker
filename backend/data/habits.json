@@ -1,0 +1,92 @@
+[
+  {
+    "id": "habit1",
+    "name": "Morning Exercise",
+    "description": "Do 30 minutes of exercise every morning before 8 AM",
+    "category": "Health",
+    "frequency": "DAILY",
+    "userId": "user1",
+    "currentStreak": 12,
+    "longestStreak": 28
+  },
+  {
+    "id": "habit2",
+    "name": "Read Books",
+    "description": "Read for at least 30 minutes daily - currently reading 'Atomic Habits'",
+    "category": "Learning",
+    "frequency": "DAILY", 
+    "userId": "user1",
+    "currentStreak": 9,
+    "longestStreak": 21
+  },
+  {
+    "id": "habit3",
+    "name": "Meditation",
+    "description": "Practice mindfulness meditation for 15 minutes using Headspace",
+    "category": "Wellness",
+    "frequency": "DAILY",
+    "userId": "user2",
+    "currentStreak": 23,
+    "longestStreak": 45
+  },
+  {
+    "id": "habit4", 
+    "name": "Drink Water",
+    "description": "Drink at least 2.5 liters of water throughout the day",
+    "category": "Health",
+    "frequency": "DAILY",
+    "userId": "user2",
+    "currentStreak": 18,
+    "longestStreak": 34
+  },
+  {
+    "id": "habit5",
+    "name": "Weekly Gym",
+    "description": "Go to gym 4 times per week - strength training focus",
+    "category": "Fitness",
+    "frequency": "WEEKLY",
+    "userId": "user3",
+    "currentStreak": 6,
+    "longestStreak": 12
+  },
+  {
+    "id": "habit6",
+    "name": "Learn Coding",
+    "description": "Practice coding for 2 hours daily - currently learning React & Node.js",
+    "category": "Learning",
+    "frequency": "DAILY",
+    "userId": "user4",
+    "currentStreak": 31,
+    "longestStreak": 62
+  },
+  {
+    "id": "habit7",
+    "name": "Healthy Eating",
+    "description": "Eat balanced meals with 5+ servings of fruits and vegetables",
+    "category": "Nutrition",
+    "frequency": "DAILY",
+    "userId": "user4",
+    "currentStreak": 24,
+    "longestStreak": 47
+  },
+  {
+    "id": "habit8",
+    "name": "Morning Walk",
+    "description": "Take a 20-minute walk in the park every morning",
+    "category": "Health",
+    "frequency": "DAILY",
+    "userId": "user3",
+    "currentStreak": 7,
+    "longestStreak": 18
+  },
+  {
+    "id": "habit9",
+    "name": "Journal Writing",
+    "description": "Write 3 things I'm grateful for each evening",
+    "category": "Mental Health",
+    "frequency": "DAILY",
+    "userId": "user1",
+    "currentStreak": 5,
+    "longestStreak": 16
+  }
+]

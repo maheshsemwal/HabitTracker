@@ -1,0 +1,98 @@
+[
+  {
+    "id": "feed1",
+    "userId": "user1",
+    "habitId": "habit1",
+    "type": "HABIT_COMPLETED",
+    "message": "John completed Morning Exercise - 12 day streak! 💪",
+    "createdAt": "2025-09-17T06:30:00.000Z"
+  },
+  {
+    "id": "feed2",
+    "userId": "user1",
+    "habitId": "habit2",
+    "type": "HABIT_COMPLETED",
+    "message": "John completed Read Books - making progress on 'Atomic Habits'! 📚",
+    "createdAt": "2025-09-17T21:00:00.000Z"
+  },
+  {
+    "id": "feed3",
+    "userId": "user2",
+    "habitId": "habit3",
+    "type": "STREAK_UPDATED",
+    "message": "Jane reached a 23-day streak with Meditation! 🧘‍♀️✨",
+    "createdAt": "2025-09-17T07:30:00.000Z"
+  },
+  {
+    "id": "feed4",
+    "userId": "user2",
+    "habitId": "habit4",
+    "type": "HABIT_COMPLETED",
+    "message": "Jane completed Drink Water - staying hydrated! 💧",
+    "createdAt": "2025-09-17T18:30:00.000Z"
+  },
+  {
+    "id": "feed5",
+    "userId": "user4",
+    "habitId": "habit6",
+    "type": "STREAK_UPDATED",
+    "message": "Sarah reached a 31-day streak with Learn Coding! 🚀 Amazing consistency!",
+    "createdAt": "2025-09-17T19:30:00.000Z"
+  },
+  {
+    "id": "feed6",
+    "userId": "user4",
+    "habitId": "habit7",
+    "type": "HABIT_COMPLETED",
+    "message": "Sarah completed Healthy Eating - fueling the body right! 🥗",
+    "createdAt": "2025-09-17T12:30:00.000Z"
+  },
+  {
+    "id": "feed7",
+    "userId": "user3",
+    "habitId": "habit8",
+    "type": "HABIT_COMPLETED",
+    "message": "Mike completed Morning Walk - fresh air and movement! 🚶‍♂️",
+    "createdAt": "2025-09-17T08:30:00.000Z"
+  },
+  {
+    "id": "feed8",
+    "userId": "user1",
+    "habitId": "habit9",
+    "type": "HABIT_COMPLETED",
+    "message": "John completed Journal Writing - practicing gratitude! 📝",
+    "createdAt": "2025-09-17T22:30:00.000Z"
+  },
+  {
+    "id": "feed9",
+    "userId": "user1",
+    "habitId": "habit1",
+    "type": "HABIT_CREATED",
+    "message": "John created a new habit: Morning Exercise 🏃‍♂️",
+    "createdAt": "2025-09-05T10:00:00.000Z"
+  },
+  {
+    "id": "feed10",
+    "userId": "user2",
+    "habitId": "habit3",
+    "type": "HABIT_CREATED",
+    "message": "Jane created a new habit: Meditation 🧘‍♀️",
+    "createdAt": "2025-08-25T14:00:00.000Z"
+  },
+  {
+    "id": "feed11",
+    "userId": "user4",
+    "habitId": "habit6",
+    "type": "HABIT_CREATED",
+    "message": "Sarah created a new habit: Learn Coding 💻",
+    "createdAt": "2025-08-17T16:00:00.000Z"
+  },
+  {
+    "id": "feed12",
+    "userId": "user3",
+    "habitId": "habit5",
+    "type": "HABIT_COMPLETED",
+    "message": "Mike completed Weekly Gym session - building strength! 💪",
+    "createdAt": "2025-09-16T18:00:00.000Z"
+  }
+]

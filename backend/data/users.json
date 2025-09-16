@@ -1,0 +1,34 @@
+[
+  {
+    "id": "user1",
+    "name": "John Doe",
+    "email": "john@example.com",
+    "password": "password123",
+    "overallStreak": 12,
+    "longestOverallStreak": 28
+  },
+  {
+    "id": "user2", 
+    "name": "Jane Smith",
+    "email": "jane@example.com",
+    "password": "password123",
+    "overallStreak": 23,
+    "longestOverallStreak": 45
+  },
+  {
+    "id": "user3",
+    "name": "Mike Johnson",
+    "email": "mike@example.com", 
+    "password": "password123",
+    "overallStreak": 7,
+    "longestOverallStreak": 18
+  },
+  {
+    "id": "user4",
+    "name": "Sarah Wilson",
+    "email": "sarah@example.com",
+    "password": "password123", 
+    "overallStreak": 31,
+    "longestOverallStreak": 62
+  }
+]
