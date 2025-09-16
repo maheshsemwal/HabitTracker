@@ -39,7 +39,7 @@ const feedController = {
   // 2. Get feed of a specific user (profile page)
   getUserFeed: async (req: Request, res: Response) => {
     try {
-      const { userId } = req.params;
+      const userId = req.params.id;
 
       const posts = await prisma.feed.findMany({
         where: { userId },

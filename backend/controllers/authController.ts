@@ -42,7 +42,7 @@ const authController = {
             // Set refresh token as HttpOnly cookie
             res.cookie("refreshToken", refreshToken, {
                 httpOnly: true,
-                secure: true,
+                secure: process.env.NODE_ENV === 'production', // Only secure in production
                 sameSite: "strict",
                 maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
             });
@@ -50,7 +50,13 @@ const authController = {
             // Return access token and user info
             res.status(201).json({
                 accessToken,
-                user: { email: user.email, name: user.name },
+                user: { 
+                    id: user.id, 
+                    email: user.email, 
+                    name: user.name,
+                    overallStreak: user.overallStreak,
+                    longestOverallStreak: user.longestOverallStreak
+                },
             });
         } catch (error) {
             console.error(error);
@@ -83,12 +89,21 @@ const authController = {
 
             res.cookie("refreshToken", refreshToken, {
                 httpOnly: true,
-                secure: true,
+                secure: process.env.NODE_ENV === 'production', // Only secure in production
                 sameSite: "strict",
                 maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
             });
 
-            res.json({ accessToken, user: {email: user.email, name: user.name } });
+            res.json({ 
+                accessToken, 
+                user: {
+                    id: user.id, 
+                    email: user.email, 
+                    name: user.name,
+                    overallStreak: user.overallStreak,
+                    longestOverallStreak: user.longestOverallStreak
+                } 
+            });
         } catch (err: any) {
             res.status(401).json({ message: err.message });
         }
@@ -105,7 +120,7 @@ const authController = {
 
             res.cookie("refreshToken", newRefreshToken, {
                 httpOnly: true,
-                secure: true,
+                secure: process.env.NODE_ENV === 'production', // Only secure in production
                 sameSite: "strict",
                 maxAge: 7 * 24 * 60 * 60 * 1000,
             });
@@ -119,6 +134,36 @@ const authController = {
     logout: (req: Request, res: Response) => {
         res.clearCookie("refreshToken");
         res.json({ message: "Logged out" });
+    },
+
+    getCurrentUser: async (req: Request, res: Response) => {
+        try {
+            const userId = req.userId;
+            if (!userId) {
+                return res.status(401).json({ message: "Unauthorized" });
+            }
+
+            const user = await prisma.user.findUnique({
+                where: { id: userId },
+                select: {
+                    id: true,
+                    email: true,
+                    name: true,
+                    overallStreak: true,
+                    longestOverallStreak: true,
+                    createdAt: true
+                }
+            });
+
+            if (!user) {
+                return res.status(404).json({ message: "User not found" });
+            }
+
+            res.json({ user });
+        } catch (error) {
+            console.error(error);
+            res.status(500).json({ message: "Internal server error" });
+        }
     },
 };
 

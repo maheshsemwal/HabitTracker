@@ -4,59 +4,55 @@ const prisma = new PrismaClient();
 const analyticsController = {
   getUserAnalytics: async (req: Request, res: Response) => {
     try {
-      const userId = req.params.userId;
+      const userId = req.params.id;
 
-    // 1. Fetch all check-ins for the user
-    const checkIns = await prisma.completedHabit.findMany({
-      where: { 
-        habit: {
-          userId: userId
+      // 1. Fetch user data (includes accurate streak information)
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: {
+          overallStreak: true,
+          longestOverallStreak: true
         }
-      },
-      include: { habit: true },
-      orderBy: { date: 'asc' }
-    });
+      });
 
-    // 2. Prepare data
-    const totalCheckIns = checkIns.length;
-
-    // Group check-ins by habit
-    const habitStats: Record<string, { name: string; total: number; dates: string[] }> = {};
-    checkIns.forEach(c => {
-      if (!habitStats[c.habitId]) {
-        habitStats[c.habitId] = {
-          name: c.habit.name,
-          total: 0,
-          dates: []
-        };
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
       }
-      const stat = habitStats[c.habitId];
-      if (stat) {
-        stat.total++;
-        stat.dates.push(new Date(c.date).toDateString());
-      }
-    });
 
-    // 3. Current streak & longest streak across all habits
-    let currentStreak = 0, longestStreak = 0;
-    const uniqueDates = Array.from(new Set(checkIns.map(c => new Date(c.date).toDateString()))).sort();
+      // 2. Fetch all check-ins for the user
+      const checkIns = await prisma.completedHabit.findMany({
+        where: { 
+          habit: {
+            userId: userId
+          }
+        },
+        include: { habit: true },
+        orderBy: { date: 'asc' }
+      });
 
-    let prevDate: Date | null = null;
-    uniqueDates.forEach(d => {
-      const date = new Date(d);
-      if (prevDate) {
-        const diff = (date.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24);
-        if (diff === 1) {
-          currentStreak++;
-        } else {
-          currentStreak = 1;
+      // 3. Prepare data
+      const totalCheckIns = checkIns.length;
+
+      // Group check-ins by habit
+      const habitStats: Record<string, { name: string; total: number; dates: string[] }> = {};
+      checkIns.forEach(c => {
+        if (!habitStats[c.habitId]) {
+          habitStats[c.habitId] = {
+            name: c.habit.name,
+            total: 0,
+            dates: []
+          };
         }
-      } else {
-        currentStreak = 1;
-      }
-      longestStreak = Math.max(longestStreak, currentStreak);
-      prevDate = date;
-    });
+        const stat = habitStats[c.habitId];
+        if (stat) {
+          stat.total++;
+          stat.dates.push(new Date(c.date).toDateString());
+        }
+      });
+
+      // 4. Use accurate streak data from user record
+      const currentStreak = user.overallStreak || 0;
+      const longestStreak = user.longestOverallStreak || 0;
 
     // 4. Last 30 days heatmap data
     const today = new Date();
@@ -71,9 +67,11 @@ const analyticsController = {
 
     // 5. Return everything
     res.json({
-      totalCheckIns,
+      totalHabits: Object.keys(habitStats).length,
+      totalCompletions: totalCheckIns,
       currentStreak,
       longestStreak,
+      completionRate: totalCheckIns > 0 ? (totalCheckIns / Object.keys(habitStats).length) : 0,
       habitStats,
       streakChart: last30Days
     });
@@ -82,7 +80,91 @@ const analyticsController = {
     console.error(err);
     res.status(500).json({ error: "Failed to fetch analytics" });
   }
-}
+},
+
+  getChartData: async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.userId;
+
+      // Get user's habits
+      const habits = await prisma.habit.findMany({
+        where: { userId },
+        include: {
+          completedHabits: {
+            orderBy: { date: 'desc' },
+            take: 30
+          }
+        }
+      });
+
+      // Streak data for the last 30 days
+      const today = new Date();
+      const streakData = [];
+      let currentStreak = 0;
+      
+      for (let i = 29; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        // Check if any habit was completed on this date
+        const hasCompletion = habits.some(habit => 
+          habit.completedHabits.some(completion => 
+            completion.date.toISOString().split('T')[0] === dateStr
+          )
+        );
+        
+        if (hasCompletion) {
+          currentStreak++;
+        } else if (i < 29) { // Don't reset on the first day
+          currentStreak = 0;
+        }
+        
+        streakData.push({
+          date: dateStr,
+          streak: currentStreak
+        });
+      }
+
+      // Weekly completions (last 7 days)
+      const weeklyData = [];
+      const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      
+      for (let i = 6; i >= 0; i--) {
+        const date = new Date(today);
+        date.setDate(today.getDate() - i);
+        const dateStr = date.toISOString().split('T')[0];
+        
+        const completions = habits.reduce((total, habit) => {
+          return total + habit.completedHabits.filter(completion =>
+            completion.date.toISOString().split('T')[0] === dateStr
+          ).length;
+        }, 0);
+        
+        weeklyData.push({
+          day: dayNames[date.getDay()],
+          completions
+        });
+      }
+
+      // Habit completion distribution
+      const completionData = habits.map((habit, index) => ({
+        habit: habit.name,
+        completions: habit.completedHabits.length,
+        color: `hsl(${(index * 137.5) % 360}, 70%, 50%)`
+      }));
+
+      res.json({
+        streakData,
+        weeklyData,
+        completionData
+      });
+
+    } catch (err) {
+      console.error(err);
+      res.status(500).json({ error: "Failed to fetch chart data" });
+    }
+  }
 };
 
 export default analyticsController;

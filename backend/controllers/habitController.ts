@@ -20,7 +20,8 @@ const habitController = {
                     frequency,
                     category,
                     userId
-                }
+                },
+                include: { completedHabits: true }
             });
 
             await createFeed(userId, "HABIT_CREATED", habit.id, `🌱 Started habit: ${habit.name}`);
@@ -65,6 +66,7 @@ const habitController = {
             const updatedHabit = await prisma.habit.update({
                 where: { id: id },
                 data: parsed.data,
+                include: { completedHabits: true }
             });
 
             return res.status(200).json(updatedHabit);

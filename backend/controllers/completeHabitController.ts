@@ -4,6 +4,146 @@ import {createFeed } from "../utilites/feedUpdate";
 
 const prisma = new PrismaClient();
 
+// Helper function to check if two periods are consecutive
+const isConsecutivePeriod = (prevPeriod: string, currentPeriod: string): boolean => {
+    // Handle daily periods (date strings)
+    if (prevPeriod.includes(' ') && currentPeriod.includes(' ')) {
+        const prevDate = new Date(prevPeriod);
+        const currDate = new Date(currentPeriod);
+        const diff = Math.floor((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
+        return diff === 1;
+    }
+    
+    // Handle weekly periods (YYYY-WW format)
+    if (prevPeriod.includes('-W') && currentPeriod.includes('-W')) {
+        const prevParts = prevPeriod.split('-W');
+        const currParts = currentPeriod.split('-W');
+        
+        if (prevParts.length === 2 && currParts.length === 2) {
+            const prevYear = Number(prevParts[0]);
+            const prevWeek = Number(prevParts[1]);
+            const currYear = Number(currParts[0]);
+            const currWeek = Number(currParts[1]);
+            
+            if (prevYear === currYear) {
+                return currWeek === prevWeek + 1;
+            } else if (currYear === prevYear + 1) {
+                return prevWeek >= 52 && currWeek === 1; // Year transition
+            }
+        }
+        return false;
+    }
+    
+    // Handle monthly periods (YYYY-MM format)
+    if (prevPeriod.includes('-') && !prevPeriod.includes('-W') && 
+        currentPeriod.includes('-') && !currentPeriod.includes('-W')) {
+        const prevParts = prevPeriod.split('-');
+        const currParts = currentPeriod.split('-');
+        
+        if (prevParts.length === 2 && currParts.length === 2) {
+            const prevYear = Number(prevParts[0]);
+            const prevMonth = Number(prevParts[1]);
+            const currYear = Number(currParts[0]);
+            const currMonth = Number(currParts[1]);
+            
+            if (prevYear === currYear) {
+                return currMonth === prevMonth + 1;
+            } else if (currYear === prevYear + 1) {
+                return prevMonth === 12 && currMonth === 1; // Year transition
+            }
+        }
+        return false;
+    }
+    
+    return false;
+};
+
+// Helper function to update user's overall streak
+const updateUserOverallStreak = async (userId: string) => {
+    // Get all completed habits for the user
+    const completions = await prisma.completedHabit.findMany({
+        where: {
+            habit: {
+                userId: userId
+            }
+        },
+        orderBy: { date: 'asc' }
+    });
+
+    if (completions.length === 0) {
+        await prisma.user.update({
+            where: { id: userId },
+            data: {
+                overallStreak: 0,
+                longestOverallStreak: 0
+            }
+        });
+        return;
+    }
+
+    // Get unique dates when ANY habit was completed
+    const uniqueDates = Array.from(new Set(completions.map(c => {
+        const date = new Date(c.date);
+        // Normalize to local date string to avoid timezone issues
+        return date.toDateString();
+    }))).sort((a, b) => new Date(a).getTime() - new Date(b).getTime());
+    
+    let currentStreak = 0;
+    let longestStreak = 0;
+    let tempStreak = 0;
+    
+    // Calculate streaks based on consecutive days
+    for (let i = 0; i < uniqueDates.length; i++) {
+        const currentDateStr = uniqueDates[i];
+        if (!currentDateStr) continue;
+        
+        const currentDate = new Date(currentDateStr);
+        
+        if (i === 0) {
+            tempStreak = 1;
+        } else {
+            const prevDateStr = uniqueDates[i - 1];
+            if (!prevDateStr) continue;
+            
+            const prevDate = new Date(prevDateStr);
+            const diffTime = currentDate.getTime() - prevDate.getTime();
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            
+            if (diffDays === 1) {
+                // Consecutive day
+                tempStreak++;
+            } else {
+                // Streak broken, start new streak
+                tempStreak = 1;
+            }
+        }
+        
+        longestStreak = Math.max(longestStreak, tempStreak);
+    }
+
+    // Determine current active streak
+    const now = new Date();
+    const today = now.toDateString();
+    const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toDateString();
+    const lastActivityDate = uniqueDates[uniqueDates.length - 1];
+    
+    // Current streak is active if last activity was today or yesterday
+    if (lastActivityDate === today || lastActivityDate === yesterday) {
+        currentStreak = tempStreak;
+    } else {
+        currentStreak = 0; // Streak broken
+    }
+
+    // Update user's overall streak in database
+    await prisma.user.update({
+        where: { id: userId },
+        data: {
+            overallStreak: currentStreak,
+            longestOverallStreak: Math.max(longestStreak, currentStreak)
+        }
+    });
+};
+
 export const completeHabitController = {
 
     markAsCompleted: async (req: Request, res: Response) => {
@@ -82,6 +222,9 @@ export const completeHabitController = {
                 },
             });
 
+            // --- Update User Overall Streak ---
+            await updateUserOverallStreak(userId);
+
             // --- Feed Entries ---
             await createFeed(userId, "HABIT_COMPLETED", id, `✅ Completed: ${habit.name}`);
             if (newStreak > habit.currentStreak) {
@@ -104,7 +247,7 @@ export const completeHabitController = {
     getHistory: async (req: Request, res: Response) => {
         try {
             const userId = req.userId;
-            const { habitId } = req.params;
+            const habitId = req.params.id; // Use 'id' to match the route parameter
 
             const habit = await prisma.habit.findUnique({ where: { id: habitId } });
             if (!habit || habit.userId !== userId) {

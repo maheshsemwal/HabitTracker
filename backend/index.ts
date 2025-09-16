@@ -7,9 +7,13 @@ import completeHabitRoutes from './routes/completeHabitRoutes';
 import followRoutes from './routes/userRoutes';
 import feedRoutes from './routes/feedRoutes';
 import analyticRoutes from './routes/analyticRoutes';
-
+import cors from 'cors';
 
 const app = express();
+app.use(cors({
+    origin: 'http://localhost:5173', // frontend URL
+    credentials: true, // allow cookies
+}));
 app.use(express.json());
 app.use(cookieParser());
 

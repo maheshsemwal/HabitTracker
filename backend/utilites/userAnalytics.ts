@@ -36,26 +36,40 @@ export const getUserAnalytics = async (req: Request, res: Response) => {
       }
     });
 
-    // 3. Current streak & longest streak across all habits
+    // 3. Current streak & longest streak across all habits (by unique days)
     let currentStreak = 0, longestStreak = 0;
     const uniqueDates = Array.from(new Set(checkIns.map(c => new Date(c.date).toDateString()))).sort();
-
+    
+    // Calculate streaks based on consecutive days
+    let tempStreak = 0;
     let prevDate: Date | null = null;
-    uniqueDates.forEach(d => {
-      const date = new Date(d);
+    
+    uniqueDates.forEach(dateStr => {
+      const date = new Date(dateStr);
       if (prevDate) {
-        const diff = (date.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24);
+        const diff = Math.floor((date.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24));
         if (diff === 1) {
-          currentStreak++;
+          tempStreak++;
         } else {
-          currentStreak = 1;
+          tempStreak = 1; // reset streak, but start new one
         }
       } else {
-        currentStreak = 1;
+        tempStreak = 1; // first day
       }
-      longestStreak = Math.max(longestStreak, currentStreak);
+      longestStreak = Math.max(longestStreak, tempStreak);
       prevDate = date;
     });
+
+    // Current streak is the streak including today
+    const todayStr = new Date().toDateString();
+    const lastActivityDate = uniqueDates[uniqueDates.length - 1];
+    
+    if (lastActivityDate === todayStr || 
+        (lastActivityDate && Math.floor((new Date(todayStr).getTime() - new Date(lastActivityDate).getTime()) / (1000 * 60 * 60 * 24)) === 1)) {
+      currentStreak = tempStreak;
+    } else {
+      currentStreak = 0; // streak broken
+    }
 
     // 4. Last 30 days heatmap data
     const today = new Date();

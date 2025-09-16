@@ -20,19 +20,50 @@ const userController = {
             const existingRequest = await prisma.follow.findFirst({
                 where: {
                     userId,
-                    followerId
+                    followerId,
+                    status: {
+                        in: ['PENDING', 'ACCEPTED']
+                    }
                 }
             });
             if (existingRequest) {
-                return res.status(400).json({ error: "Follow request already sent or you are already following this user" });
+                if (existingRequest.status === 'ACCEPTED') {
+                    return res.status(400).json({ error: "You are already following this user" });
+                } else {
+                    return res.status(400).json({ error: "Follow request already sent" });
+                }
             }
 
-            const followRequest = await prisma.follow.create({
-                data: {
+            // Check if there's a rejected request we need to update
+            const rejectedRequest = await prisma.follow.findFirst({
+                where: {
                     userId,
-                    followerId
+                    followerId,
+                    status: 'REJECTED'
                 }
             });
+
+            let followRequest;
+            if (rejectedRequest) {
+                // Update the rejected request to pending
+                followRequest = await prisma.follow.update({
+                    where: {
+                        id: rejectedRequest.id
+                    },
+                    data: {
+                        status: 'PENDING',
+                        updatedAt: new Date()
+                    }
+                });
+            } else {
+                // Create a new request
+                followRequest = await prisma.follow.create({
+                    data: {
+                        userId,
+                        followerId
+                    }
+                });
+            }
             return res.status(201).json(followRequest);
         } catch (error) {
             console.error(error);
@@ -79,7 +110,9 @@ const userController = {
             
             const requests = await prisma.follow.findMany({
                 where: { userId, status: 'PENDING' },
-                include: { user: { select: { id: true, name: true, email: true } } }
+                include: { 
+                    follower: { select: { id: true, name: true, email: true } } 
+                }
             });
             return res.status(200).json(requests);
         } catch (error) {
@@ -91,13 +124,13 @@ const userController = {
     // followers of a user
     getFollowers: async (req: Request, res: Response) => {
         try {
-            const {userId} = req.params;
+            const userId = req.params.id;
 
             const followers = await prisma.follow.findMany({
                 where: { userId, status: 'ACCEPTED' },
-                include: { user: { select: { id: true, name: true, email: true } } }
+                include: { follower: { select: { id: true, name: true, email: true } } }
             });
-            return res.status(200).json(followers);
+            return res.status(200).json(followers.map(f => f.follower));
         } catch (error) {
             console.error(error);
             return res.status(500).json({ error: "Internal server error" });
@@ -107,13 +140,13 @@ const userController = {
     // following of a user
     getFollowing: async (req: Request, res: Response) => {
         try {
-            const {userId} = req.params; 
+            const userId = req.params.id; 
 
             const following = await prisma.follow.findMany({
                 where: { followerId: userId, status: 'ACCEPTED' },
                 include: { user: { select: { id: true, name: true, email: true } } }
             });
-            return res.status(200).json(following);
+            return res.status(200).json(following.map(f => f.user));
         } catch (error) {
             console.error(error);
             return res.status(500).json({ error: "Internal server error" });
@@ -140,6 +173,33 @@ const userController = {
       });
 
       return res.status(200).json(users);
+    } catch (error) {
+      console.error(error);
+      return res.status(500).json({ error: "Internal server error" });
+    }
+  },
+
+  getUserProfile: async (req: Request, res: Response) => {
+    try {
+      const { userId } = req.params;
+      
+      const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { 
+          id: true, 
+          name: true, 
+          email: true, 
+          overallStreak: true, 
+          longestOverallStreak: true, 
+          createdAt: true 
+        }
+      });
+
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+
+      return res.status(200).json(user);
     } catch (error) {
       console.error(error);
       return res.status(500).json({ error: "Internal server error" });
